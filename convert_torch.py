@@ -57,11 +57,22 @@ def lua_recursive_model(module,seq):
 
         if name == 'SpatialConvolution':
             if not hasattr(m,'groups'): m.groups=1
-            n = nn.Conv2d(m.nInputPlane,m.nOutputPlane,(m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),1,m.groups,bias=(m.bias is not None))
+            n = nn.Conv2d(m.nInputPlane,m.nOutputPlane,(m.kW,m.kH),
+                (m.dW,m.dH),(m.padW,m.padH),1,m.groups,bias=(m.bias is not None))
+            copy_param(m,n)
+            add_submodule(seq,n)
+        elif name == 'VolumetricConvolution':
+            if not hasattr(m,'groups'): m.groups=1
+            n = nn.Conv3d(m.nInputPlane,m.nOutputPlane,(m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),
+                (m.padT,m.padW,m.padH),1,m.groups,bias=(m.bias is not None))
             copy_param(m,n)
             add_submodule(seq,n)
         elif name == 'SpatialBatchNormalization':
-            n = nn.BatchNorm2d(m.running_mean.size(0), m.eps, m.momentum, m.affine)
+            n = nn.BatchNorm2d(m.running_mean.size(0),m.eps,m.momentum,m.affine)
+            copy_param(m,n)
+            add_submodule(seq,n)
+        elif name == 'VolumetricBatchNormalization':
+            n = nn.BatchNorm3d(m.running_mean.size(0),m.eps,m.momentum,m.affine)
             copy_param(m,n)
             add_submodule(seq,n)
         elif name == 'ReLU':
@@ -70,8 +81,16 @@ def lua_recursive_model(module,seq):
         elif name == 'SpatialMaxPooling':
             n = nn.MaxPool2d((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),ceil_mode=m.ceil_mode)
             add_submodule(seq,n)
+        elif name == 'VolumetricMaxPooling':
+            n = nn.MaxPool3d((m.kT,m.kW,m.kH),(m.dT, m.dW, m.dH),(m.padT,m.padW,m.padH),
+                ceil_mode=m.ceil_mode)
+            add_submodule(seq,n)
         elif name == 'SpatialAveragePooling':
             n = nn.AvgPool2d((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),ceil_mode=m.ceil_mode)
+            add_submodule(seq,n)
+        elif name == 'VolumetricAveragePooling':
+            n = nn.AvgPool3d((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),(m.padT,m.padW,m.padH),
+                ceil_mode=m.ceil_mode)
             add_submodule(seq,n)
         elif name == 'SpatialUpSamplingNearest':
             n = nn.UpsamplingNearest2d(scale_factor=m.scale_factor)
@@ -92,12 +111,15 @@ def lua_recursive_model(module,seq):
             add_submodule(seq,n)
         elif name == 'SoftMax':
             n = nn.Softmax()
+        elif name == 'LogSoftMax':
+            n = nn.LogSoftmax()
             add_submodule(seq,n)
         elif name == 'Identity':
             n = Lambda(lambda x: x) # do nothing
             add_submodule(seq,n)
         elif name == 'SpatialFullConvolution':
-            n = nn.ConvTranspose2d(m.nInputPlane,m.nOutputPlane,(m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH))
+            n = nn.ConvTranspose2d(m.nInputPlane,m.nOutputPlane,(m.kW,m.kH),
+                (m.dW,m.dH),(m.padW,m.padH))
             add_submodule(seq,n)
         elif name == 'SpatialReplicationPadding':
             n = nn.ReplicationPad2d((m.pad_l,m.pad_r,m.pad_t,m.pad_b))
@@ -150,14 +172,27 @@ def lua_recursive_source(module):
             if not hasattr(m,'groups'): m.groups=1
             s += ['nn.Conv2d({},{},{},{},{},{},{},bias={}),#Conv2d'.format(m.nInputPlane,
                 m.nOutputPlane,(m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),1,m.groups,m.bias is not None)]
+        if name == 'VolumetricConvolution':
+            if not hasattr(m,'groups'): m.groups=1
+            s += ['nn.Conv3d({},{},{},{},{},{},{},bias={}),#Conv3d'.format(m.nInputPlane,
+                m.nOutputPlane,(m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),(m.padT,m.padW,m.padH),1,
+                m.groups,m.bias is not None)]    
         elif name == 'SpatialBatchNormalization':
             s += ['nn.BatchNorm2d({},{},{},{}),#BatchNorm2d'.format(m.running_mean.size(0), m.eps, m.momentum, m.affine)]
+        elif name == 'VolumetricBatchNormalization':
+            s += ['nn.BatchNorm3d({},{},{},{}),#BatchNorm3d'.format(m.running_mean.size(0), m.eps, m.momentum, m.affine)]
         elif name == 'ReLU':
             s += ['nn.ReLU()']
         elif name == 'SpatialMaxPooling':
             s += ['nn.MaxPool2d({},{},{},ceil_mode={}),#MaxPool2d'.format((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),m.ceil_mode)]
+        elif name == 'VolumetricMaxPooling':
+            s += ['nn.MaxPool3d({},{},{},ceil_mode={}),#MaxPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),
+                (m.padT,m.padW,m.padH),m.ceil_mode)]
         elif name == 'SpatialAveragePooling':
             s += ['nn.AvgPool2d({},{},{},ceil_mode={}),#AvgPool2d'.format((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),m.ceil_mode)]
+        elif name == 'VolumetricAveragePooling':
+            s += ['nn.AvgPool3d({},{},{},ceil_mode={}),#AvgPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),
+                (m.padT,m.padW,m.padH),m.ceil_mode)]
         elif name == 'SpatialUpSamplingNearest':
             s += ['nn.UpsamplingNearest2d(scale_factor={})'.format(m.scale_factor)]
         elif name == 'View':
@@ -170,6 +205,8 @@ def lua_recursive_source(module):
             s += ['nn.Dropout({})'.format(m.p)]
         elif name == 'SoftMax':
             s += ['nn.Softmax()']
+        elif name == 'LogSoftMax':
+            s += ['nn.LogSoftmax()']
         elif name == 'Identity':
             s += ['Lambda(lambda x: x), # Identity']
         elif name == 'SpatialFullConvolution':
