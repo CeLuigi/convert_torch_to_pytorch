@@ -89,8 +89,7 @@ def lua_recursive_model(module,seq):
             n = nn.AvgPool2d((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),ceil_mode=m.ceil_mode)
             add_submodule(seq,n)
         elif name == 'VolumetricAveragePooling':
-            n = nn.AvgPool3d((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),(m.padT,m.padW,m.padH),
-                ceil_mode=m.ceil_mode)
+            n = nn.AvgPool3d((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),ceil_mode=m.ceil_mode)
             add_submodule(seq,n)
         elif name == 'SpatialUpSamplingNearest':
             n = nn.UpsamplingNearest2d(scale_factor=m.scale_factor)
@@ -191,8 +190,7 @@ def lua_recursive_source(module):
         elif name == 'SpatialAveragePooling':
             s += ['nn.AvgPool2d({},{},{},ceil_mode={}),#AvgPool2d'.format((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),m.ceil_mode)]
         elif name == 'VolumetricAveragePooling':
-            s += ['nn.AvgPool3d({},{},{},ceil_mode={}),#AvgPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),
-                (m.padT,m.padW,m.padH),m.ceil_mode)]
+            s += ['nn.AvgPool3d({},{},{},ceil_mode={}),#AvgPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH),m.ceil_mode)]
         elif name == 'SpatialUpSamplingNearest':
             s += ['nn.UpsamplingNearest2d(scale_factor={})'.format(m.scale_factor)]
         elif name == 'View':
