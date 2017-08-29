@@ -197,7 +197,7 @@ def lua_recursive_source(module):
         elif name == 'SpatialUpSamplingNearest':
             s += ['nn.UpsamplingNearest2d(scale_factor={})'.format(m.scale_factor)]
         elif name == 'MulConstant':
-            s += ['torch.nn.legacy.nn.MulConstant(constant_scalar={})'.format(m.constant_scalar)]
+            s += ['torch.legacy.nn.MulConstant(constant_scalar={})'.format(m.constant_scalar)]
         elif name == 'View':
             s += ['Lambda(lambda x: x.view(x.size(0),-1)), # View']
         elif name == 'Linear':
