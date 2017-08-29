@@ -190,7 +190,7 @@ def lua_recursive_source(module):
         elif name == 'SpatialAveragePooling':
             s += ['nn.AvgPool2d({},{},{},ceil_mode={}),#AvgPool2d'.format((m.kW,m.kH),(m.dW,m.dH),(m.padW,m.padH),m.ceil_mode)]
         elif name == 'VolumetricAveragePooling':
-            s += ['nn.AvgPool3d({},{},{},ceil_mode={}),#AvgPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH))]
+            s += ['nn.AvgPool3d({},{}),#AvgPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH))]
         elif name == 'SpatialUpSamplingNearest':
             s += ['nn.UpsamplingNearest2d(scale_factor={})'.format(m.scale_factor)]
         elif name == 'View':
