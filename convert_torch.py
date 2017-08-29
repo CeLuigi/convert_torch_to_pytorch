@@ -126,6 +126,9 @@ def lua_recursive_model(module,seq):
         elif name == 'SpatialReflectionPadding':
             n = nn.ReflectionPad2d((m.pad_l,m.pad_r,m.pad_t,m.pad_b))
             add_submodule(seq,n)
+        elif name == 'MulConstant':
+            n = torch.legacy.nn.MulConstant(m.constant_scalar)
+            add_submodule(seq,n)    
         elif name == 'Copy':
             n = Lambda(lambda x: x) # do nothing
             add_submodule(seq,n)
@@ -193,6 +196,8 @@ def lua_recursive_source(module):
             s += ['nn.AvgPool3d({},{}),#AvgPool3d'.format((m.kT,m.kW,m.kH),(m.dT,m.dW,m.dH))]
         elif name == 'SpatialUpSamplingNearest':
             s += ['nn.UpsamplingNearest2d(scale_factor={})'.format(m.scale_factor)]
+        elif name == 'MulConstant':
+            s += ['torch.nn.legacy.nn.MulConstant(constant_scalar={})'.format(m.constant_scalar)]
         elif name == 'View':
             s += ['Lambda(lambda x: x.view(x.size(0),-1)), # View']
         elif name == 'Linear':
